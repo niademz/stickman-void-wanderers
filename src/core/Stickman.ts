@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Bone } from './Bone';
 
@@ -42,7 +43,7 @@ export class Stickman {
     
     // Initialize skeleton
     this.torso = new Bone(30, Math.PI / 2);
-    this.shoulders = new Bone(25, 0);
+    this.shoulders = new Bone(25, 0); // Give shoulders proper width
 
     this.leftThigh = new Bone(20, Math.PI / 2, this.torso);
     this.leftShin = new Bone(20, Math.PI / 2, this.leftThigh);
