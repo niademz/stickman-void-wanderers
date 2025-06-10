@@ -1,5 +1,3 @@
-
-
 import { v4 as uuidv4 } from 'uuid';
 import { Bone } from './Bone';
 
@@ -121,31 +119,41 @@ export class Stickman {
     const leanAmount = this.isWalking ? Math.sign(this.dx) * 0.05 : 0;
     this.torso.angle = Math.PI / 2 + leanAmount;
 
-    // Leg IK with more mechanical stepping
+    // Leg IK with proper alternating steps
     const hip = this.torso.getEndPosition();
     const L1 = this.leftThigh.length;
     const L2 = this.leftShin.length;
     const groundY = hip.y + L1 + L2;
     
     if (this.isWalking) {
-      // More robotic stepping pattern
-      const stepPhase = this.stepCycle;
+      // Fixed step cycle - using a simpler approach like your working code
+      const cycle = 60;
+      const phase = (this.stepCycle * 10) % cycle / cycle; // Scale stepCycle properly
       const stride = 12;
       const lift = 8;
       
-      // Sharp, mechanical step pattern instead of smooth sine
-      const leftStep = ((stepPhase % (Math.PI * 2)) / (Math.PI * 2));
-      const rightStep = (((stepPhase + Math.PI) % (Math.PI * 2)) / (Math.PI * 2));
+      // Left leg step cycle
+      let footLX, footLY;
+      if (phase < 0.6) {
+        footLX = hip.x; 
+        footLY = groundY;
+      } else {
+        const t = (phase - 0.6) / 0.4;
+        footLX = hip.x + (t * 2 - 1) * stride;
+        footLY = groundY - Math.sin(t * Math.PI) * lift;
+      }
       
-      // Create more angular stepping motion
-      const leftLift = leftStep < 0.5 ? Math.sin(leftStep * Math.PI * 2) * lift : 0;
-      const rightLift = rightStep < 0.5 ? Math.sin(rightStep * Math.PI * 2) * lift : 0;
-      
-      const footLX = hip.x + (leftStep - 0.5) * stride;
-      const footLY = groundY - leftLift;
-      
-      const footRX = hip.x + (rightStep - 0.5) * stride;
-      const footRY = groundY - rightLift;
+      // Right leg (phase + 0.5, wrapped)
+      const rightPhase = (phase + 0.5) % 1;
+      let footRX, footRY;
+      if (rightPhase < 0.6) {
+        footRX = hip.x; 
+        footRY = groundY;
+      } else {
+        const t2 = (rightPhase - 0.6) / 0.4;
+        footRX = hip.x + (t2 * 2 - 1) * stride;
+        footRY = groundY - Math.sin(t2 * Math.PI) * lift;
+      }
       
       const leftIK = this.solveTwoBoneIK(hip.x, hip.y, L1, L2, footLX, footLY);
       const rightIK = this.solveTwoBoneIK(hip.x, hip.y, L1, L2, footRX, footRY);
@@ -156,28 +164,39 @@ export class Stickman {
       this.rightThigh.angle = rightIK.hipAngle;
       this.rightShin.angle = rightIK.hipAngle + (Math.PI - rightIK.kneeAngle);
     } else {
-      // Standing pose - straight legs
-      this.leftThigh.angle = Math.PI / 2;
-      this.leftShin.angle = Math.PI / 2;
-      this.rightThigh.angle = Math.PI / 2;
-      this.rightShin.angle = Math.PI / 2;
+      // Idle pose - slightly bent legs, more natural
+      this.leftThigh.angle = Math.PI / 2 + 0.1; // Slight forward lean
+      this.leftShin.angle = Math.PI / 2 + 0.15; // Bent knee
+      this.rightThigh.angle = Math.PI / 2 + 0.1;
+      this.rightShin.angle = Math.PI / 2 + 0.15;
     }
 
     // Position shoulders at hip (torso start) like in working code
     const hipPos = this.torso.getStartPosition();
     this.shoulders.updateRoot(hipPos.x, hipPos.y);
 
-    // Arms clamp & sync - using the working approach
+    // Arms with better folding
     const baseArm = Math.PI / 2;
-    const phase = this.isWalking ? (this.stepCycle % (Math.PI * 2)) / (Math.PI * 2) : this.tick * 0.01;
-    const fold = Math.sin(phase * Math.PI * 2) * 0.8;
-    const leftF = Math.max(-0.8, Math.min(0.8, fold));
-    const rightF = Math.max(-0.8, Math.min(0.8, -fold));
+    
+    if (this.isWalking) {
+      // Walking arms - swing with lower arms folded up
+      const phase = (this.stepCycle * 10) % (Math.PI * 2) / (Math.PI * 2);
+      const swing = Math.sin(phase * Math.PI * 2) * 0.6;
+      const leftSwing = Math.max(-0.6, Math.min(0.6, swing));
+      const rightSwing = Math.max(-0.6, Math.min(0.6, -swing));
 
-    this.leftUpperArm.angle = baseArm + leftF;
-    this.leftLowerArm.angle = baseArm + leftF * 0.6;
-    this.rightUpperArm.angle = baseArm + rightF;
-    this.rightLowerArm.angle = baseArm + rightF * 0.6;
+      this.leftUpperArm.angle = baseArm + leftSwing;
+      this.leftLowerArm.angle = baseArm + leftSwing * 0.4 - 0.3; // Folded up
+      this.rightUpperArm.angle = baseArm + rightSwing;
+      this.rightLowerArm.angle = baseArm + rightSwing * 0.4 - 0.3; // Folded up
+    } else {
+      // Idle arms - relaxed but slightly folded
+      const idleSwing = Math.sin(this.tick * 0.01) * 0.1;
+      this.leftUpperArm.angle = baseArm + idleSwing;
+      this.leftLowerArm.angle = baseArm + idleSwing - 0.2; // Slightly folded
+      this.rightUpperArm.angle = baseArm - idleSwing;
+      this.rightLowerArm.angle = baseArm - idleSwing - 0.2; // Slightly folded
+    }
   }
 
   private solveTwoBoneIK(
@@ -202,4 +221,3 @@ export class Stickman {
     return { hipAngle, kneeAngle };
   }
 }
-
