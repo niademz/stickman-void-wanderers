@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { Bone } from './Bone';
 
@@ -162,22 +161,42 @@ export class Stickman {
       this.rightShin.angle = Math.PI / 2;
     }
 
-    // Anchor shoulders at torso start
-    const hipPos = this.torso.getStartPosition();
-    this.shoulders.updateRoot(hipPos.x, hipPos.y);
+    // Position shoulders at torso start (top of character)
+    const shoulderPos = this.torso.getStartPosition();
+    this.shoulders.updateRoot(shoulderPos.x, shoulderPos.y);
+
+    // Calculate shoulder endpoints for arm attachment
+    const shoulderStart = this.shoulders.getStartPosition();
+    const shoulderEnd = this.shoulders.getEndPosition();
+    
+    // Left arm starts from left side of shoulders
+    const leftShoulderX = shoulderStart.x - this.shoulders.length / 2;
+    const leftShoulderY = shoulderStart.y;
+    
+    // Right arm starts from right side of shoulders  
+    const rightShoulderX = shoulderStart.x + this.shoulders.length / 2;
+    const rightShoulderY = shoulderStart.y;
 
     // More mechanical arm movement
     if (this.isWalking) {
       const armSwing = Math.sin(this.stepCycle + Math.PI) * 0.3;
+      
+      // Update left arm position and angles
+      this.leftUpperArm.updateRoot(leftShoulderX, leftShoulderY);
       this.leftUpperArm.angle = Math.PI / 2 + armSwing;
       this.leftLowerArm.angle = this.leftUpperArm.angle + Math.abs(armSwing) * 0.5;
       
+      // Update right arm position and angles
+      this.rightUpperArm.updateRoot(rightShoulderX, rightShoulderY);
       this.rightUpperArm.angle = Math.PI / 2 - armSwing;
       this.rightLowerArm.angle = this.rightUpperArm.angle + Math.abs(armSwing) * 0.5;
     } else {
       // Hanging arms when idle
+      this.leftUpperArm.updateRoot(leftShoulderX, leftShoulderY);
       this.leftUpperArm.angle = Math.PI / 2;
       this.leftLowerArm.angle = Math.PI / 2;
+      
+      this.rightUpperArm.updateRoot(rightShoulderX, rightShoulderY);
       this.rightUpperArm.angle = Math.PI / 2;
       this.rightLowerArm.angle = Math.PI / 2;
     }
