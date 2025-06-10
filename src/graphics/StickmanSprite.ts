@@ -1,4 +1,5 @@
 
+
 import * as PIXI from 'pixi.js';
 import { Stickman } from '../core/Stickman';
 
@@ -21,12 +22,6 @@ export class StickmanSprite extends PIXI.Graphics {
     const torsoEnd = this.stickman.torso.getEndPosition();
     this.moveTo(torsoStart.x - x, torsoStart.y - y);
     this.lineTo(torsoEnd.x - x, torsoEnd.y - y);
-
-    // Draw shoulders
-    const shoulderStart = this.stickman.shoulders.getStartPosition();
-    const shoulderEnd = this.stickman.shoulders.getEndPosition();
-    this.moveTo(shoulderStart.x - x, shoulderStart.y - y);
-    this.lineTo(shoulderEnd.x - x, shoulderEnd.y - y);
 
     // Draw left leg
     const lThighStart = this.stickman.leftThigh.getStartPosition();
@@ -77,3 +72,4 @@ export class StickmanSprite extends PIXI.Graphics {
     this.stroke();
   }
 }
+

@@ -1,4 +1,5 @@
 
+
 import { v4 as uuidv4 } from 'uuid';
 import { Bone } from './Bone';
 
@@ -43,7 +44,7 @@ export class Stickman {
     
     // Initialize skeleton
     this.torso = new Bone(30, Math.PI / 2);
-    this.shoulders = new Bone(25, 0); // Give shoulders proper width
+    this.shoulders = new Bone(0, -30); // Zero length like in working code
 
     this.leftThigh = new Bone(20, Math.PI / 2, this.torso);
     this.leftShin = new Bone(20, Math.PI / 2, this.leftThigh);
@@ -162,45 +163,21 @@ export class Stickman {
       this.rightShin.angle = Math.PI / 2;
     }
 
-    // Position shoulders at torso start (top of character)
-    const shoulderPos = this.torso.getStartPosition();
-    this.shoulders.updateRoot(shoulderPos.x, shoulderPos.y);
+    // Position shoulders at hip (torso start) like in working code
+    const hipPos = this.torso.getStartPosition();
+    this.shoulders.updateRoot(hipPos.x, hipPos.y);
 
-    // Calculate shoulder endpoints for arm attachment
-    const shoulderStart = this.shoulders.getStartPosition();
-    const shoulderEnd = this.shoulders.getEndPosition();
-    
-    // Left arm starts from left side of shoulders
-    const leftShoulderX = shoulderStart.x - this.shoulders.length / 2;
-    const leftShoulderY = shoulderStart.y;
-    
-    // Right arm starts from right side of shoulders  
-    const rightShoulderX = shoulderStart.x + this.shoulders.length / 2;
-    const rightShoulderY = shoulderStart.y;
+    // Arms clamp & sync - using the working approach
+    const baseArm = Math.PI / 2;
+    const phase = this.isWalking ? (this.stepCycle % (Math.PI * 2)) / (Math.PI * 2) : this.tick * 0.01;
+    const fold = Math.sin(phase * Math.PI * 2) * 0.8;
+    const leftF = Math.max(-0.8, Math.min(0.8, fold));
+    const rightF = Math.max(-0.8, Math.min(0.8, -fold));
 
-    // More mechanical arm movement
-    if (this.isWalking) {
-      const armSwing = Math.sin(this.stepCycle + Math.PI) * 0.3;
-      
-      // Update left arm position and angles
-      this.leftUpperArm.updateRoot(leftShoulderX, leftShoulderY);
-      this.leftUpperArm.angle = Math.PI / 2 + armSwing;
-      this.leftLowerArm.angle = this.leftUpperArm.angle + Math.abs(armSwing) * 0.5;
-      
-      // Update right arm position and angles
-      this.rightUpperArm.updateRoot(rightShoulderX, rightShoulderY);
-      this.rightUpperArm.angle = Math.PI / 2 - armSwing;
-      this.rightLowerArm.angle = this.rightUpperArm.angle + Math.abs(armSwing) * 0.5;
-    } else {
-      // Hanging arms when idle
-      this.leftUpperArm.updateRoot(leftShoulderX, leftShoulderY);
-      this.leftUpperArm.angle = Math.PI / 2;
-      this.leftLowerArm.angle = Math.PI / 2;
-      
-      this.rightUpperArm.updateRoot(rightShoulderX, rightShoulderY);
-      this.rightUpperArm.angle = Math.PI / 2;
-      this.rightLowerArm.angle = Math.PI / 2;
-    }
+    this.leftUpperArm.angle = baseArm + leftF;
+    this.leftLowerArm.angle = baseArm + leftF * 0.6;
+    this.rightUpperArm.angle = baseArm + rightF;
+    this.rightLowerArm.angle = baseArm + rightF * 0.6;
   }
 
   private solveTwoBoneIK(
@@ -225,3 +202,4 @@ export class Stickman {
     return { hipAngle, kneeAngle };
   }
 }
+
