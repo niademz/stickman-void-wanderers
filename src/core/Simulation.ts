@@ -465,7 +465,7 @@ case 'SeekQuiet': {
     };
 
 const MAX_FISH = 20;                // never more than this many fish
-const MIN_STICKMEN_FOR_FISH = 30;   // need at least this many stickmen before spawning
+const MIN_STICKMEN_FOR_FISH = 10;   // need at least this many stickmen before spawning
 const SPAWN_CHANCE = 0.0002;        // ~0.02% per frame
 const HOME_JITTER = 100; 
 if (this.stickmen.length >= MIN_STICKMEN_FOR_FISH && Math.random() < SPAWN_CHANCE) {  // ~0.2% chance per frame
