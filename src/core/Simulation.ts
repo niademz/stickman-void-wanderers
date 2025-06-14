@@ -100,13 +100,13 @@ export class Simulation {
     this.homes.push(computeCentroid(this.stickmen.map(s => ({ x: s.x, y: s.y }))));
 
     // Create our fish
-    
+    /*
     const fish = new Fish(window.innerWidth / 2, window.innerHeight / 2);
     const fishSprite = new FishSprite(fish);
     this.fishes.push(fish);
     this.fishSprites.push(fishSprite);
     this.worldContainer.addChild(fishSprite);
-    
+    */
 
     this.setupInputHandlers();
     this.startGameLoop();
