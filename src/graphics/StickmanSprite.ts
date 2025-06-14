@@ -64,12 +64,14 @@ export class StickmanSprite extends PIXI.Graphics {
     this.lineTo(rLowerEnd.x - x, rLowerEnd.y - y);
 
     // Draw head as small black circle
-    this.beginFill(0x000000);
+    this.beginFill(this.stickman.debugColor);
     this.drawCircle(torsoStart.x - x, torsoStart.y - y - 8, 3);
     this.endFill();
     
     this.position.set(x, y);
     this.stroke();
+    // flip the entire stickman on the x-axis whenever dx < 0
+    this.scale.x = this.stickman.dx < 0 ? -1 : 1;
   }
 }
 
