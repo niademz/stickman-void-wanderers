@@ -122,48 +122,123 @@ export class Simulation {
   }
 
   setupInputHandlers() {
-    // track pointer for fish + camera drag
-    this.app.canvas.addEventListener('pointerdown', (e) => {
+  const canvas = this.app.view as HTMLCanvasElement;
+
+  //–– EXISTING POINTER HANDLERS (spawn + mouse‐drag + wheel zoom) ––
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') {
       if (e.button === 0) {
-        // left click to spawn stickman
         const worldPos = this.camera.screenToWorld(e.clientX, e.clientY);
         this.spawnStickman(worldPos.x, worldPos.y);
       } else if (e.button === 2) {
-        // right click to drag camera
         this.camera.startDrag(e.clientX, e.clientY);
       }
-    });
+    }
+  });
 
-    this.app.canvas.addEventListener('pointermove', (e) => {
-      // update camera drag
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse') {
       this.camera.updateDrag(e.clientX, e.clientY);
-      // update mouseWorld for fish
       const worldPos = this.camera.screenToWorld(e.clientX, e.clientY);
       this.mouseWorld.x = worldPos.x;
       this.mouseWorld.y = worldPos.y;
-    });
+    }
+  });
 
-    this.app.canvas.addEventListener('pointerup', () => {
-      this.camera.stopDrag();
-    });
+  canvas.addEventListener('pointerup', () => {
+    this.camera.stopDrag();
+  });
 
-    // zoom
-    this.app.canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      this.camera.setZoom(this.camera.targetZoom * zoomFactor);
-    });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    this.camera.setZoom(this.camera.targetZoom * zoomFactor);
+  });
 
-    // prevent context menu
-    this.app.canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-    });
+  // prevent right‐click menu
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-    // resize
-    window.addEventListener('resize', () => {
-      this.app.renderer.resize(window.innerWidth, window.innerHeight);
-    });
+
+  //–– TOUCH: add tap detection ––
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+
+  function getTouchDist(t0: Touch, t1: Touch) {
+    const dx = t1.clientX - t0.clientX;
+    const dy = t1.clientY - t0.clientY;
+    return Math.hypot(dx, dy);
   }
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    // record first finger for tap detection
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartTime = Date.now();
+      // ALSO start pan
+      this.camera.startDrag(t.clientX, t.clientY);
+    }
+    else if (e.touches.length === 2) {
+      // pinch start
+      pinchStartDist = getTouchDist(e.touches[0], e.touches[1]);
+      pinchStartZoom = this.camera.targetZoom;
+      this.camera.stopDrag();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      // pan
+      const t = e.touches[0];
+      this.camera.updateDrag(t.clientX, t.clientY);
+      const world = this.camera.screenToWorld(t.clientX, t.clientY);
+      this.mouseWorld.x = world.x;
+      this.mouseWorld.y = world.y;
+    }
+    else if (e.touches.length === 2) {
+      // pinch‐to‐zoom
+      const dist = getTouchDist(e.touches[0], e.touches[1]);
+      const scale = dist / pinchStartDist;
+      this.camera.setZoom(pinchStartZoom * scale);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    // if it was a quick, almost‐stationary tap → spawn
+    const dt = Date.now() - touchStartTime;
+    if (e.touches.length === 0 && dt < 200) {
+      const dx = (e.changedTouches[0].clientX - touchStartX);
+      const dy = (e.changedTouches[0].clientY - touchStartY);
+      if (dx*dx + dy*dy < 25*25) {  // moved less than ~25px
+        const world = this.camera.screenToWorld(
+          e.changedTouches[0].clientX,
+          e.changedTouches[0].clientY
+        );
+        this.spawnStickman(world.x, world.y);
+      }
+    }
+    // always stop any lingering pan
+    if (e.touches.length === 0) {
+      this.camera.stopDrag();
+    }
+  }, { passive: false });
+
+
+  //–– window‐resize stays the same ––
+
+  window.addEventListener('resize', () => {
+    this.app.renderer.resize(window.innerWidth, window.innerHeight);
+  });
+}
+
 
   startGameLoop() {
     this.app.ticker.add(() => {
